@@ -1,0 +1,11 @@
+diet::what foods are healthy
+diet::what foods do you eat to get thinner
+diet::what foods should you stay away from when dieting
+diet::what foods should you eat when dieting
+chronic::repeating cough
+chronic::repeating problem
+chronic::this happens every week
+chronic::this happens almost every month
+cold::how do you treat the common cold
+cold::what are symptoms of the common cold
+cold::how long is it normal for a cold to last
