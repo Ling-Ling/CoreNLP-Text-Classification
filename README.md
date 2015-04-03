@@ -17,13 +17,15 @@ Part 3 Creating the model - In this part we will write a simple model
 1. Create a new file (here we called it Model.scala).  Your file should look fairly similar to the Model.scala in this example.  After this point you should still be able to build train and deploy your engine without errors.
 
 Part 4 Using CoreNLP - In this part we will hardcode the CoreNLP classification engine into the Algorithm file just to make sure everything works.
+
 1. In the predict method add the following code block:
-val cdc = new ColumnDataClassifier("data/propertiesfile.prop")
-val classifier = cdc.makeClassifier(cdc.readTrainingExamples("data/trainfile.train"))
-var line = "";
-for (line <- ObjectBank.getLineIterator("data/testfile.test"))
-  var d = cdc.makeDatumFromLine(line)
-  System.out.println(line + " ==> " + cl.classOf(d))
+  val cdc = new ColumnDataClassifier("data/propertiesfile.prop")
+  val classifier = cdc.makeClassifier(cdc.readTrainingExamples("data/trainfile.train"))
+  var line = "";
+  for (line <- ObjectBank.getLineIterator("data/testfile.test"))
+    var d = cdc.makeDatumFromLine(line)
+    System.out.println(line + " ==> " + cl.classOf(d))
+
 When you send a query to your engine the items in your test file along with their predictions shuold be output to the command line.  (Where pio deploy is running)
 
 Part 5 Importing data to the server - In this part we will be modifying the python file while imports data into our server
