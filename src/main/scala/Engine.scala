@@ -1,4 +1,4 @@
-package org.template.recommendation
+package org.template.classification
 
 import io.prediction.controller.IEngineFactory
 import io.prediction.controller.Engine
@@ -11,7 +11,7 @@ case class PredictedResult(
   val queryResults: String
 ) extends Serializable
 
-object RecommendationEngine extends IEngineFactory {
+object ClassificationEngine extends IEngineFactory {
   def apply() = {
     new Engine(
       classOf[DataSource],

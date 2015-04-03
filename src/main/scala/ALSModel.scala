@@ -1,9 +1,9 @@
-package org.apache.spark.mllib.recommendation
+package org.apache.spark.mllib.classification
 // This must be the same package as Spark's MatrixFactorizationModel because
 // MatrixFactorizationModel's constructor is private and we are using
 // its constructor in order to save and load the model
 
-import org.template.recommendation.ALSAlgorithmParams
+import org.template.classification.ALSAlgorithmParams
 
 import io.prediction.controller.IPersistentModel
 import io.prediction.controller.IPersistentModelLoader
