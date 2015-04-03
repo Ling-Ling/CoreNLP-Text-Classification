@@ -3,23 +3,20 @@ package org.apache.spark.mllib.classification
 // MatrixFactorizationModel's constructor is private and we are using
 // its constructor in order to save and load the model
 
-import org.template.classification.ALSAlgorithmParams
+import org.template.classification.AlgorithmParams
 
 import io.prediction.controller.IPersistentModel
 import io.prediction.controller.IPersistentModelLoader
-import io.prediction.data.storage.BiMap
 
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import org.apache.spark.rdd.RDD
 
-import edu.stanford.nlp.classify.Classifier;
-import edu.stanford.nlp.classify.ColumnDataClassifier;
+import edu.stanford.nlp.classify.Classifier
+import edu.stanford.nlp.classify.ColumnDataClassifier
 
-class ALSModel(
+class Model(
     val cl: Classifier[String, String])
   {
-  def save(id: String, params: ALSAlgorithmParams,
+  def save(id: String, params: AlgorithmParams,
     sc: SparkContext): Boolean = {
     sc.parallelize(Seq(cl)).saveAsObjectFile(s"/tmp/${id}/cl")
     true
@@ -30,11 +27,11 @@ class ALSModel(
   }
 }
 
-object ALSModel
-  extends IPersistentModelLoader[ALSAlgorithmParams, ALSModel] {
-  def apply(id: String, params: ALSAlgorithmParams,
+object Model
+  extends IPersistentModelLoader[AlgorithmParams, Model] {
+  def apply(id: String, params: AlgorithmParams,
     sc: Option[SparkContext]) = {
-    new ALSModel(
+    new Model(
       cl = sc.get
         .objectFile[Classifier[String, String]](s"/tmp/${id}/cl").first
     )

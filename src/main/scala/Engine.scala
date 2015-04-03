@@ -16,7 +16,7 @@ object ClassificationEngine extends IEngineFactory {
     new Engine(
       classOf[DataSource],
       classOf[Preparator],
-      Map("als" -> classOf[ALSAlgorithm]),
+      Map("als" -> classOf[NLPAlgorithm]),
       classOf[Serving])
   }
 }

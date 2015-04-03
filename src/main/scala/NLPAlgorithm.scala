@@ -2,15 +2,12 @@ package org.template.classification
 
 import io.prediction.controller.PAlgorithm
 import io.prediction.controller.Params
-import io.prediction.data.storage.BiMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
-import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
-import org.apache.spark.mllib.recommendation.ALS
 import org.apache.spark.mllib.recommendation.{Rating => MLlibRating}
-import org.apache.spark.mllib.classification.ALSModel
+import org.apache.spark.mllib.classification.Model
 
 import grizzled.slf4j.Logger
 import scala.collection.JavaConversions._
@@ -26,18 +23,16 @@ import edu.stanford.nlp.classify.Dataset;
 import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.HashIndex;
 
-case class ALSAlgorithmParams(
-  val rank: Int,
-  val numIterations: Int,
+case class AlgorithmParams(
   val lambda: Double) extends Params
 
-class ALSAlgorithm(val ap: ALSAlgorithmParams)
-  extends PAlgorithm[PreparedData, ALSModel, Query, PredictedResult] {
+class NLPAlgorithm(val ap: AlgorithmParams)
+  extends PAlgorithm[PreparedData, Model, Query, PredictedResult] {
 
   @transient lazy val logger = Logger[this.type]
   val cdc = new ColumnDataClassifier("data/medtest.prop");
   
-  def train(data: PreparedData): ALSModel = {
+  def train(data: PreparedData): Model = {
     // MLLib ALS cannot handle empty training data.
     require(!data.texts.take(1).isEmpty,
       s"RDD[TextClass] in PreparedData cannot be empty." +
@@ -55,11 +50,11 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
     val classifier = cdc.makeClassifier(clDataset);
 */    
     val classifier = cdc.makeClassifier(cdc.readTrainingExamples("data/medtest.train"))
-    new ALSModel(
+    new Model(
       cl = classifier)
   }
 
-  def predict(model: ALSModel, query: Query): PredictedResult = {
+  def predict(model: Model, query: Query): PredictedResult = {
     
     val cl = model.cl
     var line = ""
