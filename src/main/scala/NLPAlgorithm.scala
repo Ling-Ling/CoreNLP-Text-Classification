@@ -23,6 +23,8 @@ import edu.stanford.nlp.classify.Dataset;
 import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.HashIndex;
 
+import scala.collection.mutable.LinkedList
+
 case class AlgorithmParams(
   val lambda: Double) extends Params
 
@@ -39,17 +41,13 @@ class NLPAlgorithm(val ap: AlgorithmParams)
       " Please check if DataSource generates TrainingData" +
       " and Preprator generates PreparedData correctly.")
 
-    var cdata = data.texts.collect();
-/*    var clabel = new LinkedList<String>;
-    var cvalue = new LinkedList<String>
     var labelIndex: Index[String] = new HashIndex[String](); 
-    labelIndex.addAll(data.texts.map(_.text_type));
+    labelIndex.addAll(List.fromArray(data.texts.map(_.text_type).collect()));
     var valueIndex: Index[String] = new HashIndex[String](); 
-    valueIndex.addAll(data.texts.map(_.text));
-    val clDateset = new Dataset(data.text.length, labelIndex, valueIndex);
+    valueIndex.addAll(List.fromArray(data.texts.map(_.text).collect()));
+    val clDataset = new Dataset(data.texts.count().toInt, valueIndex, labelIndex);
     val classifier = cdc.makeClassifier(clDataset);
-*/    
-    val classifier = cdc.makeClassifier(cdc.readTrainingExamples("data/medtest.train"))
+    
     new Model(
       cl = classifier)
   }
