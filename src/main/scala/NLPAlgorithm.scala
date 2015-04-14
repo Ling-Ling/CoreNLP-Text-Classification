@@ -34,7 +34,7 @@ class NLPAlgorithm(val ap: AlgorithmParams)
   @transient lazy val logger = Logger[this.type]
   val cdc = new ColumnDataClassifier("data/medtest.prop");
   
-  def train(data: PreparedData): Model = {
+  def train(sc: SparkContext, data: PreparedData): Model = {
     // MLLib ALS cannot handle empty training data.
     require(!data.texts.take(1).isEmpty,
       s"RDD[TextClass] in PreparedData cannot be empty." +
