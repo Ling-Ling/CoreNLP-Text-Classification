@@ -34,23 +34,28 @@ class DataSource(val dsp: DataSourceParams)
     val eventsRDD: RDD[Event] = eventsDb.find(
       appId = dsp.appId,
       entityType = Some("question"),
-      eventNames = Some(List("$set")))(sc)
+      eventNames = Some(List("twitter")))(sc)
     
     val textClassRDD: RDD[TextClass] = eventsRDD.map { event =>
-      val textClass = try {
-        val textClassType: String = event.event match {
-        case "$set" => event.properties.get[String]("text")
-        case _ => throw new Exception(s"Unexpected event ${event} is read.")
+      val text = try {
+        val textValue: String = event.event match {
+          case "twitter" => event.properties.get[String]("text")
+          case _ => throw new Exception(s"Unexpected event ${event} is read.")
+        }
+        val genderValue: String = event.event match {
+          case "twitter" => event.properties.get[String]("gender")
+          case _ => throw new Exception(s"Unexpected event ${event} is read.")
         }
         TextClass(event.entityId,
-              textClassType)
+              textValue,
+              genderValue)
       } catch {
         case e: Exception => {
           logger.error(s"Cannot convert ${event} to TextClass. Exception: ${e}.")
           throw e
         }
       }
-      textClass
+      text
     }
     new TrainingData(textClassRDD)
   }
@@ -58,7 +63,8 @@ class DataSource(val dsp: DataSourceParams)
 
 case class TextClass(
   val text_type: String,
-  val text: String
+  val text: String,
+  val gender: String
 )
 
 class TrainingData(

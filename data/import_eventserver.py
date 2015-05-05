@@ -35,7 +35,7 @@ def import_events(client, file):
         target_entity_id=data[1]
       )'''
     client.create_event(
-      event="$set",
+      event="twitter",
       entity_type="question",
       entity_id=data[0],
       properties={"text":data[1]}

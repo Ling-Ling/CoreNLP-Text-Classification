@@ -4,7 +4,8 @@ import io.prediction.controller.IEngineFactory
 import io.prediction.controller.Engine
 
 case class Query(
-  val text: String
+  val text: String,
+  val gender: String
 ) extends Serializable
 
 case class PredictedResult(
