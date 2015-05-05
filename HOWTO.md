@@ -1,5 +1,7 @@
 This tutorial assumes that you have the PredictionIO QuickStart Recommendation Engine up and running locally on your machine
 
+# CoreNLP - Stanford Classifier
+
 Go to http://nlp.stanford.edu/software/classifier.shtml and download the Stanford Classifier.
 
 Create a lib folder in your predictionio project folder, and drop stanford-classifier.jar (located in the top level of Stanford Classifier) into the folder.  
@@ -24,24 +26,26 @@ In the above example we specify that the 1st column uses split words (has spaces
 
 A second thing to note is that when taking queries, the classifier will only take queries of the same form as the input.  This means that if you don’t have a gold standard you will need to prefix your data with \t.  For example: \t<text>\t<text> would be a valid query if the original input was of the form <classification>\t<text>\t<text>
 
-Integrating CoreNLP into PredictionIO
+#Integrating CoreNLP into PredictionIO
 
 The integration of Core-NLP into PredictionIO isn’t particularly complicated but involves several steps. 
 
 Data Importation:
 
-Throughout this part of the guide we will be using the medWhat dataset as an example.  You can follow along using any dataset.
+Throughout this part of the guide we will be using a generic dataset with input of the form <classification>::<text>::<gender> as an example.  You can follow along using any dataset.
 
 As always when using a new dataset or engine customization we will need to change our import file in order to import the type of data that we want to parse, by modifying the import_eventserver.py script (or whichever import script you are using).  
 
 A generic change for a dataset of the form classification::textual data::gender would be as follows:
 
+```
 client.create_event(
-event = “twitter”,
-entity_type = “question”,
-entity_id=data[0], //this is where the classification goes
-properties={“text”:data[1], “gender”:data[2]} //this is where your data goes
+  event = “twitter”,
+  entity_type = “question”,
+  entity_id=data[0], //this is where the classification goes
+  properties={“text”:data[1], “gender”:data[2]} //this is where your data goes
 )
+```
 
 In order to customize this for your own dataset, simply use the appropriate column from your dataset (0 indexed) for the entity_id and properties, and add or delete to as many properties as you need.  By default the import_eventserver.py script uses :: as a delimiter, but you are free to change it to whatever best suits your needs.
 
@@ -54,19 +58,21 @@ DataSource.scala
 
 We will need to modify our RDD class to accept strings as both the label and the corresponding text.  This is because the CoreNLP classifier treats labels (even numeric ones) as text: 
 
+```
 case class TextClass(
   val classification: String,
-    val text: String,
-      val gender: String
-      )
+  val text: String,
+  val gender: String
+)
 
 class TrainingData(
   val texts: RDD[TextClass]
-  ) extends Serializable {
-      override def toString = {
-            s”queries: [${texts.count()}] (${texts.take(1).toList}...)”
-              }
+) extends Serializable {
+  override def toString = {
+    s”queries: [${texts.count()}] (${texts.take(1).toList}...)”
   }
+}
+```
 
   We will also need to modify how we read data in due to the changes we made in the data importation and the RDD:
   entityType = Some(“question”)
@@ -94,9 +100,9 @@ TextClass(event.entityId,
 text
 ```
 
-                            Engine.scala
+Engine.scala
 
-                            We will need to change our Query and PredictedResult class to the following to account for the labels being Strings:
+We will need to change our Query and PredictedResult class to the following to account for the labels being Strings:
 
                             case class Query(
                               val text: String
