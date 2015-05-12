@@ -34,7 +34,7 @@ class NLPAlgorithm(val ap: AlgorithmParams)
   extends PAlgorithm[PreparedData, Model, Query, PredictedResult] {
 
   @transient lazy val logger = Logger[this.type]
-  val cdc = new ColumnDataClassifier("data/medtest.prop");
+  val cdc = new ColumnDataClassifier("data/data.prop");
   
   def train(sc: SparkContext, data: PreparedData): Model = {
     // MLLib ALS cannot handle empty training data.
