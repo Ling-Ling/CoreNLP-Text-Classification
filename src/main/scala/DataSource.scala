@@ -6,21 +6,15 @@ import io.prediction.controller.EmptyActualResult
 import io.prediction.controller.Params
 import io.prediction.data.storage.Event
 import io.prediction.data.storage.Storage
+import io.prediction.data.store.PEventStore
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 
-import edu.stanford.nlp.classify.Classifier;
-import edu.stanford.nlp.classify.ColumnDataClassifier;
-import edu.stanford.nlp.classify.LinearClassifier;
-import edu.stanford.nlp.ling.Datum;
-import edu.stanford.nlp.objectbank.ObjectBank;
-import edu.stanford.nlp.util.ErasureUtils;
-
 import grizzled.slf4j.Logger
 
-case class DataSourceParams(val appId: Int) extends Params
+case class DataSourceParams(val appName: String) extends Params
 
 class DataSource(val dsp: DataSourceParams)
   extends PDataSource[TrainingData,
@@ -30,34 +24,32 @@ class DataSource(val dsp: DataSourceParams)
 
   override
   def readTraining(sc: SparkContext): TrainingData = {
-    val eventsDb = Storage.getPEvents()
-    val eventsRDD: RDD[Event] = eventsDb.find(
-      appId = dsp.appId,
+  
+    val eventsRDD: RDD[Event] = PEventStore.find(
+      appName = dsp.appName,
       entityType = Some("question"),
-      eventNames = Some(List("twitter")))(sc)
-    
-    val textClassRDD: RDD[TextClass] = eventsRDD.map { event =>
-      val text = try {
-        val textValue: String = event.event match {
-          case "twitter" => event.properties.get[String]("text")
-          case _ => throw new Exception(s"Unexpected event ${event} is read.")
-        }
-        val genderValue: String = event.event match {
-          case "twitter" => event.properties.get[String]("gender")
-          case _ => throw new Exception(s"Unexpected event ${event} is read.")
-        }
-        TextClass(event.entityId,
-              textValue,
-              genderValue)
+      eventNames = Some(List("twitter"))
+    )(sc).cache()
+
+    val labeledPoints: RDD[TextClass] = eventsRDD
+      .filter {event => event.event == "twitter"}
+      .map { event =>
+
+      try {
+        TextClass(
+          text_type = event.entityId,
+          text = event.properties.get[String]("text"),
+          gender = event.properties.get[String]("gender")
+        ) 
       } catch {
-        case e: Exception => {
-          logger.error(s"Cannot convert ${event} to TextClass. Exception: ${e}.")
+        case e: Exception =>
+          logger.error(s"Cannot convert ${event} to TextClass." +
+            s" Exception: ${e}.")
           throw e
-        }
       }
-      text
     }
-    new TrainingData(textClassRDD)
+    
+    new TrainingData(labeledPoints)
   }
 }
 

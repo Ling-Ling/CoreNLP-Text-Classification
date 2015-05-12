@@ -40,10 +40,10 @@ A generic change for a dataset of the form classification::textual data::gender 
 
 ```
 client.create_event(
-  event = “twitter”,
-  entity_type = “question”,
+  event = "twitter",
+  entity_type = "question",
   entity_id=data[0], //this is where the classification goes
-  properties={“text”:data[1], “gender”:data[2]} //this is where your data goes
+  properties={"text":data[1], "gender":data[2]} //this is where your data goes
 )
 ```
 
@@ -74,119 +74,136 @@ class TrainingData(
 }
 ```
 
-  We will also need to modify how we read data in due to the changes we made in the data importation and the RDD:
-  entityType = Some(“question”)
-  eventNames = Some(List(“twitter”)))(sc)
+We will also need to modify how we read data in due to the changes we made in the data importation and the RDD:
+First we will use the event store to grab our data
 
 ```
-val text = try {
-  val textValue: String = event.event match {
-  case "twitter" => event.properties.get[String]("text")
-  case _ => throw new Exception(s"Unexpected event ${event} is read.")
-}
-val genderValue: String = event.event match {
-  case "twitter" => event.properties.get[String]("gender")
-  case _ => throw new Exception(s"Unexpected event ${event} is read.")
-}
-TextClass(event.entityId,
-          textValue,
-          genderValue)
-} catch {
-  case e: Exception => {
-    logger.error(s"Cannot convert ${event} to TextClass. Exception: ${e}.")
-    throw e
+val eventsRDD: RDD[EVENT] = PEventStore.find(
+  appName = dsp.appName,
+  entityType = Some(“question”),
+  eventNames = Some(List(“twitter”))
+)(sc).cache()
+```
+
+Next we will use these events to create our RDD
+
+```
+val labeledPoints: RDD[TextClass] = eventsRDD
+  .filter {event => event.event == "twitter"}
+  .map { event =>
+
+  try {
+    TextClass(
+      text_type = event.entityId,
+      text = event.properties.get[String]("text")
+      gender = event.properties.get[String]("gender")
+    )
+  } catch {
+    case e: Exception =>
+      logger.error(s"Cannot convert ${event} to TextClass." +
+        s" Exception: ${e}.")
+      throw e
   }
 }
-text
 ```
 
 Engine.scala
 
 We will need to change our Query and PredictedResult class to the following to account for the labels being Strings:
 
-                            case class Query(
-                              val text: String
-                              ) extends Serializable
+```
+case class Query(
+  val text: String
+) extends Serializable
 
-                              case class PredictedResult(
-                                val queryResults: String,
-                                  val gender: Option[Set[String]]
-                                  ) extends Serializable
+case class PredictedResult(
+val queryResults: String,
+val gender: Option[Set[String]]
+) extends Serializable
+```
 
+Model.scala
 
-                                  Model.scala
+The Model that we will need is very simple.  All the model needs to do is save a classifier.
 
-                                  The Model that we will need is very simple.  All the model needs to do is save a classifier.  Delete all the contents of the Model file and replace it with the following:
+We will need to add the following imports
 
-                                  import edu.stanford.nlp.classify.Classifier
-                                  import edu.stanford.nlp.classify.ColumnDataClassifier
+```
+import edu.stanford.nlp.classify.Classifier
+import edu.stanford.nlp.classify.ColumnDataClassifier
+```
 
-                                  The Model will only contain a Classifier:
+Change the parameters of the Model so it only accepts a Classifier
 
-                                  class Model(val cl: Classifier[String, String])
+```
+class Model(val cl: Classifier[String, String])
+```
 
-                                  We will need to change the save, toString and apply functions appropriately:
+We will need to change the save, toString and apply functions appropriately:
 
-                                    1 package org.apache.spark.mllib.classification
-                                      5 
-                                        6 import org.template.classification.AlgorithmParams
-                                          7 
-                                            8 import io.prediction.controller.IPersistentModel
-                                              9 import io.prediction.controller.IPersistentModelLoader
-                                               10 
-                                                11 import org.apache.spark.SparkContext
-                                                 12 
-                                                  13 import edu.stanford.nlp.classify.Classifier
-                                                   14 import edu.stanford.nlp.classify.ColumnDataClassifier
-                                                    15 
-                                                     16 class Model(
-                                                      17     val cl: Classifier[String, String])
-                                                      18   {
-                                                         19   def save(id: String, params: AlgorithmParams,
-                                                          20     sc: SparkContext): Boolean = {
-                                                             21     sc.parallelize(Seq(cl)).saveAsObjectFile(s"/tmp/${id}/cl")
-                                                              22     true
-                                                               23   }
-                                                                24 
-                                                                 25   override def toString = {
-                                                                    26     s"empty"
-                                                                     27   }
-                                                                      28 }
-                                                                       29 
-                                                                        30 object Model
-                                                                         31   extends IPersistentModelLoader[AlgorithmParams, Model] {
-                                                                            32   def apply(id: String, params: AlgorithmParams,
-                                                                             33     sc: Option[SparkContext]) = {
-                                                                                34     new Model(
-                                                                                 35       cl = sc.get
-                                                                                  36         .objectFile[Classifier[String, String]](s"/tmp/${id}/cl").first
-                                                                                   37     )
-                                                                                 38   }
-                                                                                  39 }
+```
+package org.apache.spark.mllib.classification
 
-                                                                                  Algorithm.scala
+import org.template.classification.AlgorithmParams
 
-                                                                                  Train
-                                                                                  The easiest way to train the data is to save all of our data as a tab separated list of inputs and read that into our Classifier.
+import io.prediction.controller.IPersistentModel
+import io.prediction.controller.IPersistentModelLoader
 
-                                                                                  var labelList = data.texts.map(_.text_type).collect();
-                                                                                  var textList = data.texts.map(_.text).collect();
-                                                                                  var genderList = data.texts.map(_.gender).collect();
-                                                                                  val pw = new PrintWriter("corenlpData")
+import org.apache.spark.SparkContext
 
-                                                                                  for (x <- 0 to data.texts.count().toInt-1) {
-                                                                                      pw.print(labelList(x) + "\t" + textList(x) + "\t" + genderList(x) + "\n")
-                                                                                  }
+import edu.stanford.nlp.classify.Classifier
+import edu.stanford.nlp.classify.ColumnDataClassifier
 
-                                                                                  val classifier = cdc.makeClassifier(cdc.readTrainingExamples("corenlpData"))
-                                                                                  new Model(cl = classifier)
+class Model(
+  val cl: Classifier[String, String])
+{
+  def save(id: String, params: AlgorithmParams,
+    sc: SparkContext): Boolean = {
+    sc.parallelize(Seq(cl)).saveAsObjectFile(s"/tmp/${id}/cl")
+    true
+  }
+ 
+  override def toString = {
+    s"empty"
+  }
+}
+    
+object Model
+  extends IPersistentModelLoader[AlgorithmParams, Model] {
+  def apply(id: String, params: AlgorithmParams,
+    sc: Option[SparkContext]) = {
+      
+    new Model(
+    cl = sc.get
+      .objectFile[Classifier[String, String]](s"/tmp/${id}/cl").first
+    )
+  }
+}
+```
+Algorithm.scala
 
-                                                                                  Predict
+Train
+The easiest way to train the data is to save all of our data as a tab separated list of inputs and read that into our Classifier.
+```
+var labelList = data.texts.map(_.text_type).collect();
+var textList = data.texts.map(_.text).collect();
+var genderList = data.texts.map(_.gender).collect();
+val pw = new PrintWriter("corenlpData")
 
-                                                                                  /* Read in our query and modify it into a form that the classifier can read*/
-                                                                                  val d = cdc.makeDatumFromLine(“\t” + query.text + “\t” + query.gender)
+for (x <- 0 to data.texts.count().toInt-1) {
+    pw.print(labelList(x) + "\t" + textList(x) + "\t" + genderList(x) + "\n")
+}
 
-                                                                                  /* Output the result*/
-                                                                                  new PredictedResult(query.text + “ ⇒ “ + model.cl.classOf(d)
+val classifier = cdc.makeClassifier(cdc.readTrainingExamples("corenlpData"))
+new Model(cl = classifier)
+
+Predict
+
+/* Read in our query and modify it into a form that the classifier can read*/
+val d = cdc.makeDatumFromLine(“\t” + query.text + “\t” + query.gender)
+
+/* Output the result*/
+new PredictedResult(query.text + “ ⇒ “ + model.cl.classOf(d)
+```
 
 
