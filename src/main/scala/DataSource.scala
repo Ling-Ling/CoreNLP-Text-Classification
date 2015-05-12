@@ -39,7 +39,17 @@ class DataSource(val dsp: DataSourceParams)
         TextClass(
           text_type = event.entityId,
           text = event.properties.get[String]("text"),
-          gender = event.properties.get[String]("gender")
+          gender = event.properties.getOpt[String]("gender"),
+          dizzy = event.properties.getOpt[String]("dizziness"),
+          convul = event.properties.getOpt[String]("convulsions"),
+          heart = event.properties.getOpt[String]("heart_palpitation"),
+          breath = event.properties.getOpt[String]("shortness_of_breath"),
+          head = event.properties.getOpt[String]("headaches"),
+          effect = event.properties.getOpt[String]("effect_decreased"),
+          allergy = event.properties.getOpt[String]("allergies_worse"),
+          bad = event.properties.getOpt[String]("bad_interaction"),
+          nausea = event.properties.getOpt[String]("nausea"),
+          insomnia = event.properties.getOpt[String]("insomnia")
         ) 
       } catch {
         case e: Exception =>
@@ -56,7 +66,17 @@ class DataSource(val dsp: DataSourceParams)
 case class TextClass(
   val text_type: String,
   val text: String,
-  val gender: String
+  val gender: Option[String],
+  val dizzy: Option[String],
+  val convul: Option[String],
+  val heart: Option[String],
+  val breath: Option[String],
+  val head: Option[String],
+  val effect: Option[String],
+  val allergy: Option[String],
+  val bad: Option[String],
+  val nausea: Option[String],
+  val insomnia: Option[String]
 )
 
 class TrainingData(

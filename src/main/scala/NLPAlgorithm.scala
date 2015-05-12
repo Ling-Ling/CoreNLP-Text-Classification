@@ -75,7 +75,32 @@ class NLPAlgorithm(val ap: AlgorithmParams)
       System.out.println(line + " ==> " + cl.classOf(dd));
     }*/
 
-    val d = cdc.makeDatumFromLine("\t" + query.text + "\t" + query.gender)
+    var line = "\t" + query.text + "\t"
+    if (query.gender.isEmpty) line += "unknown"
+    line += query.gender + "\t"
+    if (query.dizziness.isEmpty) line += "unknown"
+    line += query.dizziness + "\t"
+    if (query.convulsions.isEmpty) line += "unknown"
+    line += query.convulsions + "\t"
+    if (query.heart_palpitation.isEmpty) line += "unknown"
+    line += query.heart_palpitation + "\t";
+    if (query.shortness_of_breath.isEmpty) line += "unknown"
+    line += query.shortness_of_breath + "\t"
+    if (query.headaches.isEmpty) line += "unknown"
+    line += query.headaches + "\t"
+    if (query.effect_decreased.isEmpty) line += "unknown"
+    line += query.effect_decreased + "\t"
+    if (query.allergies_worse.isEmpty) line += "unknown"
+    line += query.allergies_worse + "\t";
+    if (query.bad_interaction.isEmpty) line += "unknown"
+    line += query.bad_interaction + "\t";
+    if (query.nausea.isEmpty) line += "unknown"
+    line += query.nausea + "\t";
+    if (query.insomnia.isEmpty) line += "unknown"
+    line += query.insomnia + "\t";
+
+    val d = cdc.makeDatumFromLine(line)
+
     new PredictedResult(query.text + " ==> " + cl.classOf(d))
   }
 }
