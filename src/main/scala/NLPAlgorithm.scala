@@ -31,10 +31,12 @@ case class AlgorithmParams(
   val lambda: Double) extends Params
 
 class NLPAlgorithm(val ap: AlgorithmParams)
-  extends PAlgorithm[PreparedData, Model, Query, PredictedResult] {
+  extends PAlgorithm[PreparedData, Model, Query, PredictedResult] 
+  with Serializable {
 
   @transient lazy val logger = Logger[this.type]
   val cdc = new ColumnDataClassifier("data/data.prop");
+  var cl: Classifier[String, String] = null
   
   def train(sc: SparkContext, data: PreparedData): Model = {
     // MLLib ALS cannot handle empty training data.
@@ -63,6 +65,7 @@ class NLPAlgorithm(val ap: AlgorithmParams)
     */
     
     val classifier = cdc.makeClassifier(cdc.readTrainingExamples("corenlpData"))
+    cl = classifier
     new Model(cl = classifier)
   }
 
@@ -101,6 +104,16 @@ class NLPAlgorithm(val ap: AlgorithmParams)
 
     val d = cdc.makeDatumFromLine(line)
 
-    new PredictedResult(query.text + " ==> " + cl.classOf(d))
+    new PredictedResult(cl.classOf(d))
   }
+  
+  override
+  def batchPredict(model: Model, queries: RDD[(Long, Query)]): RDD[(Long, PredictedResult)] = {
+  
+    val results = queries.mapValues(query => new PredictedResult(model.cl.classOf(new ColumnDataClassifier("data/data.prop").makeDatumFromLine("\t" + query.text + "\t"))))
+    results
+  }
+
+  //val mapFun = (query: Query) => new PredictedResult(cl.classOf(cdc.makeDatumFromLine("\t" + query.text + "\t")))
+
 }

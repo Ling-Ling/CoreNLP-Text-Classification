@@ -13,8 +13,8 @@ import org.apache.spark.SparkContext
 import edu.stanford.nlp.classify.Classifier
 import edu.stanford.nlp.classify.ColumnDataClassifier
 
-class Model(
-    val cl: Classifier[String, String])
+class Model(val cl: Classifier[String, String])
+  extends Serializable
   {
   def save(id: String, params: AlgorithmParams,
     sc: SparkContext): Boolean = {
@@ -28,7 +28,8 @@ class Model(
 }
 
 object Model
-  extends IPersistentModelLoader[AlgorithmParams, Model] {
+  extends IPersistentModelLoader[AlgorithmParams, Model] 
+  with Serializable {
   def apply(id: String, params: AlgorithmParams,
     sc: Option[SparkContext]) = {
     new Model(

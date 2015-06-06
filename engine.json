@@ -7,16 +7,6 @@
       "appName": "CoreNLP"
     }
   },
-  "serving": {
-    "params": {
-      "filepath": "data/sample_disabled_items.txt"
-    }
-  },
-  "preparator": {
-    "params": {
-      "filepath":"data/sample_not_train_data.txt"
-    }
-  },
   "algorithms": [
     {
       "name": "als",
